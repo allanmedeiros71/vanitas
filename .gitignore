@@ -1,0 +1,15 @@
+# build
+/vanitas
+/vanitas.exe
+/dist/
+
+# test and coverage artifacts
+coverage.out
+coverage.xml
+*.test
+gremlins*.json
+
+# secrets
+.env
+.env.*
+!.env.example
