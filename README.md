@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.png" alt="Vanitas" width="100%">
+  <img src="docs/assets/banner.jpg" alt="Vanitas" width="100%">
 </p>
 
 <h3 align="center">Read the true names of your data.</h3>
