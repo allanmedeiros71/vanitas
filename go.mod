@@ -3,6 +3,7 @@ module github.com/allanmedeiros71/vanitas
 go 1.27
 
 require (
+	charm.land/bubbles/v2 v2.2.1
 	github.com/BurntSushi/toml v1.6.0
 	github.com/cucumber/godog v0.16.0
 	github.com/spf13/cobra v1.10.2
