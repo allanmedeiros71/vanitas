@@ -97,7 +97,7 @@ const pinned = 2
 
 // maxOffset is the largest scroll offset: the last full window of n scrollable rows.
 func (m Modal) maxOffset(n int) int {
-	if *m.window <= 0 {
+	if m.window == nil || *m.window <= 0 {
 		return max(0, n-1)
 	}
 	return max(0, n-*m.window)
@@ -171,7 +171,9 @@ func (m Modal) View(width, height int) string {
 	boxH := min(len(rows)+2, maxH)
 	inner, innerH := boxW-2, boxH-2
 	winH := max(0, innerH-pinned)
-	*m.window = winH
+	if m.window != nil {
+		*m.window = winH
+	}
 	scroll := rows[pinned:]
 	start := min(m.offset, max(0, len(scroll)-winH))
 	vis := append(append([]row{}, rows[:min(pinned, innerH)]...), scroll[start:min(start+winH, len(scroll))]...)
