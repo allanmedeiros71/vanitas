@@ -81,7 +81,7 @@ func (s Styles) RenderPanel(title, body string, width, height int, focused bool)
 	inner := width - 2
 	top := edge.Render(b.TopLeft)
 	used := 0
-	if title = fit(title, inner-2); title != "" {
+	if title = fitWidth(title, inner-2); title != "" {
 		top += edge.Render(b.Top) + s.PanelTitle.Render(title)
 		used = lipgloss.Width(title) + 1
 	}
@@ -104,8 +104,8 @@ func (s Styles) RenderPanel(title, body string, width, height int, focused bool)
 	return strings.Join(out, "\n")
 }
 
-// fit trims s to at most n cells.
-func fit(s string, n int) string {
+// fitWidth trims s to at most n cells.
+func fitWidth(s string, n int) string {
 	r := []rune(s)
 	for len(r) > 0 && lipgloss.Width(string(r)) > n {
 		r = r[:len(r)-1]
