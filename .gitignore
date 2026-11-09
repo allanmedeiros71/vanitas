@@ -13,3 +13,6 @@ gremlins*.json
 .env
 .env.*
 !.env.example
+
+# tooling output
+!.gremlins.yaml
