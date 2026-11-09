@@ -139,8 +139,8 @@ func TestModalScrollBounds(t *testing.T) {
 	for range n + 5 {
 		m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
-	if m.offset != n-1 {
-		t.Fatalf("offset %d, want %d", m.offset, n-1)
+	if m.offset != n-pinned-1 {
+		t.Fatalf("offset %d, want %d", m.offset, n-pinned-1)
 	}
 	for range n + 5 {
 		m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
@@ -148,11 +148,14 @@ func TestModalScrollBounds(t *testing.T) {
 	if m.offset != 0 {
 		t.Fatalf("offset %d", m.offset)
 	}
-	// scrolled view shows later rows in a small box
+	// title and filter stay pinned while binding rows scroll in a small box
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	v := ansi.Strip(m.View(40, 8))
-	if strings.Contains(v, "Help — x") {
-		t.Fatalf("title still visible after scroll:\n%s", v)
+	if !strings.Contains(v, "Help — x") || !strings.Contains(v, "Filter:") {
+		t.Fatalf("title/filter not pinned after scroll:\n%s", v)
+	}
+	if strings.Contains(v, "│s ") {
+		t.Fatalf("section heading still visible after scroll:\n%s", v)
 	}
 }
 

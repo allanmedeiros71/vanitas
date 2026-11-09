@@ -29,6 +29,7 @@ type helpWorld struct {
 	leader   palette.Leader
 	leadMsg  tea.Msg
 	inLeader bool
+	walk     []walkCheck
 }
 
 func newHelpWorld() (*helpWorld, error) {
@@ -108,8 +109,14 @@ func helpModalKeys(reg *keymap.Registry) help.ModalKeys {
 	return k
 }
 
+type walkCheck struct {
+	scope, section string
+	err            error
+}
+
 func (w *helpWorld) walkScopes() error {
 	reg := keymap.Defaults()
+	w.walk = nil
 	for _, s := range reg.Scopes() {
 		secs := []help.Section{{Title: string(s), Bindings: toKeyBindings(reg.Bindings(s))}}
 		if s != keymap.ScopeGlobal {
@@ -118,23 +125,52 @@ func (w *helpWorld) walkScopes() error {
 		lines := help.NewModal(string(s), secs, helpModalKeys(reg), w.st).Lines()
 		from := 0
 		for _, sec := range secs {
+			c := walkCheck{scope: string(s), section: sec.Title}
 			idx := slices.Index(lines[from:], sec.Title)
 			if idx < 0 {
-				return fmt.Errorf("scope %s: heading %q missing", s, sec.Title)
+				c.err = fmt.Errorf("scope %s: heading %q missing", s, sec.Title)
+				w.walk = append(w.walk, c)
+				continue
 			}
 			from += idx
 			for _, b := range sec.Bindings {
 				h := b.Help()
 				if !slices.Contains(lines[from:], h.Key+"  "+h.Desc) {
-					return fmt.Errorf("scope %s: %q missing under %q", s, h.Key, sec.Title)
+					c.err = fmt.Errorf("scope %s: %q missing under %q", s, h.Key, sec.Title)
+					break
 				}
 			}
+			w.walk = append(w.walk, c)
 		}
 	}
 	return nil
 }
 
-func (w *helpWorld) walkOK() error { return nil }
+// walkAssert fails unless at least one section selected by pick was checked and all passed.
+func (w *helpWorld) walkAssert(pick func(walkCheck) bool) error {
+	n := 0
+	for _, c := range w.walk {
+		if !pick(c) {
+			continue
+		}
+		n++
+		if c.err != nil {
+			return c.err
+		}
+	}
+	if n == 0 {
+		return fmt.Errorf("no help sections were checked")
+	}
+	return nil
+}
+
+func (w *helpWorld) scopeListed() error {
+	return w.walkAssert(func(c walkCheck) bool { return c.section == c.scope })
+}
+
+func (w *helpWorld) globalListed() error {
+	return w.walkAssert(func(c walkCheck) bool { return c.section == "Global" })
+}
 
 func (w *helpWorld) helpFor(scope string) {
 	reg := keymap.Defaults()
@@ -259,8 +295,8 @@ func TestHelpFeature(t *testing.T) {
 		sc.Step(`^the footer shows (\d+) shortcuts$`, w.footerShows)
 		sc.Step(`^the footer does not contain "([^"]*)"$`, w.footerLacks)
 		sc.Step(`^I open the help for each scope of the default keymap$`, w.walkScopes)
-		sc.Step(`^every binding of that scope is listed with its key and description$`, w.walkOK)
-		sc.Step(`^every "global" binding is listed under "Global"$`, w.walkOK)
+		sc.Step(`^every binding of that scope is listed with its key and description$`, w.scopeListed)
+		sc.Step(`^every "global" binding is listed under "Global"$`, w.globalListed)
 		sc.Step(`^the help modal for scope "([^"]*)"$`, w.helpFor)
 		sc.Step(`^I type "([^"]*)"$`, w.typeText)
 		sc.Step(`^I press "([^"]*)"$`, func(name string) {

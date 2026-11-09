@@ -51,11 +51,14 @@ type Modal struct {
 	st       theme.Styles
 	filter   string
 	offset   int
+	// window is the number of scrollable rows the last View showed; View records it so Update
+	// can keep the offset within the last full window. Shared across copies of the value.
+	window *int
 }
 
 // NewModal builds a modal titled "Help — <title>" listing sections.
 func NewModal(title string, sections []Section, keys ModalKeys, st theme.Styles) Modal {
-	return Modal{title: title, sections: sections, keys: keys, st: st}
+	return Modal{title: title, sections: sections, keys: keys, st: st, window: new(int)}
 }
 
 // Update handles scrolling, closing and filter typing.
@@ -64,6 +67,8 @@ func (m Modal) Update(msg tea.Msg) (Modal, tea.Cmd) {
 	if !ok {
 		return m, nil
 	}
+	// Bring an offset set before the first View back inside the last full window.
+	m.offset = min(m.offset, m.maxOffset(len(m.rows())-pinned))
 	switch {
 	case key.Matches(k, m.keys.Close):
 		return m, func() tea.Msg { return ClosedMsg{} }
@@ -72,7 +77,7 @@ func (m Modal) Update(msg tea.Msg) (Modal, tea.Cmd) {
 			m.offset--
 		}
 	case key.Matches(k, m.keys.Down):
-		if m.offset < len(m.rows())-1 {
+		if m.offset < m.maxOffset(len(m.rows())-pinned) {
 			m.offset++
 		}
 	case key.Matches(k, backspace):
@@ -85,6 +90,17 @@ func (m Modal) Update(msg tea.Msg) (Modal, tea.Cmd) {
 		m.offset = 0
 	}
 	return m, nil
+}
+
+// pinned is the number of leading rows (title, filter) that never scroll.
+const pinned = 2
+
+// maxOffset is the largest scroll offset: the last full window of n scrollable rows.
+func (m Modal) maxOffset(n int) int {
+	if *m.window <= 0 {
+		return max(0, n-1)
+	}
+	return max(0, n-*m.window)
 }
 
 func (m Modal) rows() []row {
@@ -154,9 +170,13 @@ func (m Modal) View(width, height int) string {
 	boxW, maxH := max(width*70/100, 4), max(height*80/100, 4)
 	boxH := min(len(rows)+2, maxH)
 	inner, innerH := boxW-2, boxH-2
-	start := min(m.offset, max(0, len(rows)-innerH))
+	winH := max(0, innerH-pinned)
+	*m.window = winH
+	scroll := rows[pinned:]
+	start := min(m.offset, max(0, len(scroll)-winH))
+	vis := append(append([]row{}, rows[:min(pinned, innerH)]...), scroll[start:min(start+winH, len(scroll))]...)
 	lines := make([]string, 0, innerH)
-	for _, r := range rows[start:min(start+innerH, len(rows))] {
+	for _, r := range vis {
 		lines = append(lines, ansi.Truncate(m.style(r), inner, ""))
 	}
 	box := m.st.Modal.Width(boxW).Height(boxH).Render(strings.Join(lines, "\n"))
