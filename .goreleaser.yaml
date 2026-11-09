@@ -1,0 +1,32 @@
+version: 2
+
+project_name: vanitas
+
+builds:
+  - id: vanitas
+    binary: vanitas
+    main: ./cmd/vanitas
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/allanmedeiros71/vanitas/internal/cli.version={{.Version}} -X github.com/allanmedeiros71/vanitas/internal/cli.commit={{.ShortCommit}} -X github.com/allanmedeiros71/vanitas/internal/cli.date={{ time "2006-01-02" }}
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
