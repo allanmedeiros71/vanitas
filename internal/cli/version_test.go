@@ -45,7 +45,7 @@ func TestUnknownCommand(t *testing.T) {
 
 func TestRootPrintsHelp(t *testing.T) {
 	t.Parallel()
-	out, _, err := run(t, BuildInfo{})
+	out, _, err := run(t, BuildInfo{}, "--help")
 	if err != nil {
 		t.Fatal(err)
 	}
