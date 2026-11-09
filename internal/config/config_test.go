@@ -96,23 +96,25 @@ func TestWriteFileAtomic(t *testing.T) {
 }
 
 func TestWriteFileAtomicFailureKeepsOriginal(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "f.toml")
-	if err := os.WriteFile(path, []byte("orig"), 0o600); err != nil {
+	// The target is a non-empty directory, so the final rename fails even as root.
+	if err := os.Mkdir(path, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(dir, 0o500); err != nil {
+	inner := filepath.Join(path, "orig")
+	if err := os.WriteFile(inner, []byte("orig"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
 	err := WriteFileAtomic(path, []byte("new"), 0o600)
 	if err == nil {
-		t.Skip("directory permissions not enforced (running as root?)")
+		t.Fatal("expected an error")
 	}
 	if !strings.Contains(err.Error(), path) {
 		t.Errorf("error %q does not name the path", err)
 	}
-	got, _ := os.ReadFile(path)
+	got, _ := os.ReadFile(inner)
 	if string(got) != "orig" {
 		t.Errorf("original changed: %q", got)
 	}
