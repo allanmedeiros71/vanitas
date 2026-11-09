@@ -15,4 +15,4 @@ gremlins*.json
 !.env.example
 
 # tooling output
-.gremlins*
+!.gremlins.yaml
