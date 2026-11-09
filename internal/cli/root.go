@@ -5,7 +5,10 @@ import (
 	"io"
 	"os"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
+
+	"github.com/allanmedeiros71/vanitas/internal/app"
 )
 
 // Build information, set by ldflags (-X) at release time.
@@ -28,10 +31,7 @@ func NewRootCommand(info BuildInfo) *cobra.Command {
 		Use:          "vanitas",
 		Short:        "A terminal database client",
 		SilenceUsage: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			// Placeholder until the TUI replaces it.
-			return cmd.Help()
-		},
+		RunE:         func(*cobra.Command, []string) error { return runTUI() },
 	}
 	root.AddCommand(newVersionCommand(info))
 	return root
@@ -52,4 +52,15 @@ func execute(info BuildInfo, args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+// runTUI loads the startup state and runs the app until it quits.
+func runTUI() error {
+	opts, closeLog, err := Startup()
+	if err != nil {
+		return err
+	}
+	defer closeLog()
+	_, err = tea.NewProgram(app.New(opts)).Run()
+	return err
 }
