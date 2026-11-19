@@ -10,7 +10,7 @@ Feature: Configuration directory and settings
     And the settings file is "/tmp/vt-conf/settings.toml"
     And the keymap file is "/tmp/vt-conf/keymap.toml"
 
-  @R-16 @T-01-03
+  @R-16 @T-01-03 @unix
   Scenario: XDG_CONFIG_HOME is used when VANITAS_CONFIG_DIR is not set
     Given the environment variable "VANITAS_CONFIG_DIR" is ""
     And the environment variable "XDG_CONFIG_HOME" is "/tmp/xdg"
@@ -76,7 +76,7 @@ Feature: Configuration directory and settings
     When the settings are loaded
     Then loading fails with an error containing "page_size must be between 1 and 100000, got 0"
 
-  @R-16 @T-01-03
+  @R-16 @T-01-03 @unix
   Scenario: Saving settings writes the file atomically
     Given an empty configuration directory
     When the settings are saved with "theme" set to "dracula"
