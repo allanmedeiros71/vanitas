@@ -75,14 +75,14 @@ Feature: Customisable keymap
     Given a keymap file containing:
       """
       [leader]
-      quit = "x"
+      quit = "y"
       [help]
-      close = "x"
+      close = "y"
       """
     When the keymap is loaded
     Then there are no keymap warnings
-    And in scope "leader" the key "x" runs "quit"
-    And in scope "help" the key "x" runs "close"
+    And in scope "leader" the key "y" runs "quit"
+    And in scope "help" the key "y" runs "close"
 
   @R-12 @T-01-04
   Scenario: Unknown scopes and actions are reported
