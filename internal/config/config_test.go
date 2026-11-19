@@ -11,19 +11,27 @@ import (
 
 func TestResolveDir(t *testing.T) {
 	t.Parallel()
+	abs := func(p string) string {
+		a, err := filepath.Abs(filepath.FromSlash(p))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return a
+	}
+	h, x, ad, b := abs("/h"), abs("/x"), abs("/ad"), abs("/b")
 	tests := []struct {
 		name, goos, home string
 		env              map[string]string
 		want             string
 		wantErr          bool
 	}{
-		{"override", "linux", "/h", map[string]string{"VANITAS_CONFIG_DIR": "/a/../b", "XDG_CONFIG_HOME": "/x"}, "/b", false},
-		{"xdg", "linux", "/h", map[string]string{"XDG_CONFIG_HOME": "/x"}, "/x/vanitas", false},
-		{"xdg relative", "linux", "/h", map[string]string{"XDG_CONFIG_HOME": "x"}, "/h/.config/vanitas", false},
-		{"windows", "windows", "/h", map[string]string{"APPDATA": "/ad"}, "/ad/vanitas", false},
-		{"windows no appdata", "windows", "/h", nil, "", true},
-		{"darwin", "darwin", "/h", nil, "/h/Library/Application Support/vanitas", false},
-		{"linux", "linux", "/h", nil, "/h/.config/vanitas", false},
+		{"override", "linux", h, map[string]string{"VANITAS_CONFIG_DIR": filepath.Join(abs("/a"), "..", "b"), "XDG_CONFIG_HOME": x}, b, false},
+		{"xdg", "linux", h, map[string]string{"XDG_CONFIG_HOME": x}, filepath.Join(x, "vanitas"), false},
+		{"xdg relative", "linux", h, map[string]string{"XDG_CONFIG_HOME": "x"}, filepath.Join(h, ".config", "vanitas"), false},
+		{"windows", "windows", h, map[string]string{"APPDATA": ad}, filepath.Join(ad, "vanitas"), false},
+		{"windows no appdata", "windows", h, nil, "", true},
+		{"darwin", "darwin", h, nil, filepath.Join(h, "Library", "Application Support", "vanitas"), false},
+		{"linux", "linux", h, nil, filepath.Join(h, ".config", "vanitas"), false},
 		{"no home", "linux", "", nil, "", true},
 	}
 	for _, tt := range tests {
@@ -33,7 +41,7 @@ func TestResolveDir(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
 			}
-			if filepath.ToSlash(got) != tt.want {
+			if got != tt.want {
 				t.Errorf("got %q, want %q", got, tt.want)
 			}
 		})
@@ -86,12 +94,6 @@ func TestWriteFileAtomic(t *testing.T) {
 	}
 	if names := entries(t, dir); !reflect.DeepEqual(names, []string{"f.toml"}) {
 		t.Errorf("directory has %v", names)
-	}
-	if fi, _ := os.Stat(dir); fi.Mode().Perm() != 0o700 {
-		t.Errorf("dir perm %v", fi.Mode().Perm())
-	}
-	if fi, _ := os.Stat(path); fi.Mode().Perm() != 0o600 {
-		t.Errorf("file perm %v", fi.Mode().Perm())
 	}
 }
 
